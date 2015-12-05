@@ -1,0 +1,1444 @@
+/* SCCS  %W--- %G% -- %U% */
+/*
+ *
+ * Copyright: Copyright (c) 1997-2002 University of Southern California Brain Project.
+ * Copyright: This software may be freely copied provided the toplevel
+ * Copyright: COPYRIGHT file is included with each such copy.
+ * Copyright: Email nsl@java.usc.edu.
+ *
+ *
+ * NSL javacc syntax. Based on the grammar written by Sriram Sankar for Java 1.1,
+ * modified by David Williamns for Java 1.2, by Andrea Gini for Java 1.4
+ * and finally by Marco Savard to include a missing construct.
+ *
+ * Author: Salvador Marmol
+ *
+ *====================================================================
+ *
+ *
+ * This is a bugfix of the grammar written by Sriram Sankar for Java 1.1,
+ * modified by David Williamns for Java 1.2, by Andrea Gini for Java 1.4
+ * and finally by Marco Savard to include a missing construct.
+ *
+ * According wiht the Java Language Sytax Specification, rules Classbody,
+ * ClassBodyDeclarations, InterfaceBody and InterfaceBodyDeclarations, you
+ * can put any number of semicolon between any production you can find
+ * inside a class or an interface. These extra semicolons must be treated
+ * in a different way from semicolons that concludes some production
+ * (like abstract method declarations or field declarations), because the
+ * latter are mandatory. So I removed the modification previously added
+ * by Marco Savard to the production FieldDeclaration() (duplication of ";")
+ * and added ";" as an optional derivation inside ClassBodyDeclaration() and
+ * InterfaceBodyDeclaration(), in a way that mimic the official 
+ * Java Grammar, that can be found at the following adress:
+ * http://java.sun.com/docs/books/jls/second_edition/html/syntax.doc.html 
+ *
+ * As an informal proof of correctness, now this grammar accepts all the 3887
+ * files of the JDK1.4 API.
+ *
+ * Thanks to Marco Savard for having pointed out the problem.
+ *
+ * To track changes, search for the string "// added by Andrea Gini2"
+ *
+ * Andrea Gini, 05/05/2002
+ * ginian@tiscali.it
+ *
+ *====================================================================
+ *
+ * According the point #19 of the java 1.2 compatibility document of Sun
+ * (http://java.sun.com/products/jdk/1.2/compatibility.html), the following
+ * construct is valid since java 1.2 : 
+ * 
+ * class D extends C {
+ *   void f() {
+ *   // overrides f() to run it in a new thread
+ *       new Thread(new Runnable() {
+ *           public void run() {
+ *	        D.super.f();
+ *	    }
+ *	 }).start();
+ *    }
+ * }
+ *
+ * Unfortunely, this was not supported by the previous grammar. So 
+ * I have adapted the grammar in order to support it. 
+ *
+ * To track changes, search for the string "Modified by Marco Savard"
+ *
+ * Marco Savard, 28/03/2002
+ * marco.savard@magna-solutions.de
+ *
+ * ==================================================================
+ *
+ * This is a modified version of the grammar written by Sriram Sankar for Java 1.1
+ * and modified by David Williamns for Java 1.2. It has been modified to accept Java
+ * sources for Java 1.4. The grammar have been modified in four parts: <br> 
+ * 1) 'assert' has been included to the keyword list<br>
+ * 2) AssertStatement() production has been added<br>
+ * 3) the production Statement() has been modified in order to support AssertStatement()<br>
+ * 4) in the main the string "for Java1.2 code" has been changed with "for NSL3.0 code"<br>
+ *
+ * To track changes, search for the string "// added by Andrea Gini"
+ *
+ * Andrea Gini, 24/02/2002
+ * ginian@tiscali.it
+ *
+ * ==================================================================
+ *
+ * This file is a modified version of one originally found in the
+ * JavaGrammars Examples directory of JavaCC1_1. It has been
+ * modified to accept Java source code for Java 1.2. Basically,
+ * this means a new key word was added, 'strictfp', and that keyword
+ * added to the appropriate productions and LOOKAHEADs (where other,
+ * similar keywords are listed as possible choices). This involved
+ * changing 11 lines.
+ *
+ * Minor changes were also made to the main program for testing.
+ *
+ * The goal of this effort was for the grammar to be able to parse
+ * any legal Java 1.2 source code. It does not reject all illegal
+ * cases, but neither did the original. Plus, when it comes to
+ * the new 'strictfp' keyword, the Java Compiler from Sun (JDK1.2.1)
+ * also does not reject all illegal cases, as defined by the
+ * "Updates" document found at
+ *       http://java.sun.com/docs/books/jls/strictfp-changes.pdf
+ * (see the testcases.txt file for details).
+ *
+ * David Williams, 7/99
+ * ===================================================================
+ *
+ *
+ * Copyright (C) 1996, 1997 Sun Microsystems Inc.
+ *
+ * Use of this file and the system it is part of is constrained by the
+ * file COPYRIGHT in the root directory of this system.  You may, however,
+ * make any modifications you wish to this file.
+ *
+ * Java files generated by running JavaCC on this file (or modified versions
+ * of this file) may be used in exactly the same manner as Java files
+ * generated from any grammar developed by you.
+ *
+ * Author: Sriram Sankar
+ * Date: 3/5/97
+ *
+ * This file contains a Java grammar and actions that implement a front-end.
+ *
+ */
+
+options {
+  JAVA_UNICODE_ESCAPE = true;
+
+  STATIC=false;
+  MULTI=true;
+  VISITOR=true;
+  NODE_USES_PARSER=true;
+}
+
+PARSER_BEGIN(NslParser)
+
+import java.io.*;
+
+public class NslParser {
+
+  public static boolean error=false;
+  public static int errorCount=0;
+  public static int vnslj=0;
+
+}
+
+PARSER_END(NslParser)
+
+
+/* WHITE SPACE */
+
+SPECIAL_TOKEN :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| "\f"
+}
+
+/* COMMENTS */
+
+MORE :
+{
+  "//" : IN_SINGLE_LINE_COMMENT
+|
+  <"/**" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+|
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_SINGLE_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+  <FORMAL_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT,IN_MULTI_LINE_VERBATIM>
+MORE :
+{
+  < ~[] >
+}
+
+/* RESERVED WORDS AND LITERALS */
+
+TOKEN :
+{
+  < ABSTRACT: "abstract" >
+| < BOOLEAN: "boolean" >
+| < BREAK: "break" >
+| < BYTE: "byte" >
+| < CASE: "case" >
+| < CATCH: "catch" >
+| < CHAR: "char" >
+| < CLASS: "class" >
+| < CONST: "const" >
+| < CONTINUE: "continue" >
+| < _DEFAULT: "default" >
+| < DO: "do" >
+| < DOUBLE: "double" >
+| < ELSE: "else" >
+| < EXTENDS: "extends" >
+| < FALSE: "false" >
+| < FINAL: "final" >
+| < FINALLY: "finally" >
+| < FLOAT: "float" >
+| < FOR: "for" >
+| < GOTO: "goto" >
+| < IF: "if" >
+| < IMPLEMENTS: "implements" >
+| < IMPORT: "import" >
+| < INSTANCEOF: "instanceof" >
+| < INT: "int" >
+| < INTERFACE: "interface" >
+| < LONG: "long" >
+| < NATIVE: "native" >
+| < NEW: "new" >
+| < NULL: "null" >
+| < PACKAGE: "package">
+| < PRIVATE: "private" >
+| < PROTECTED: "protected" >
+| < PUBLIC: "public" >
+| < RETURN: "return" >
+| < SHORT: "short" >
+| < STATIC: "static" >
+| < SUPER: "super" >
+| < SWITCH: "switch" >
+| < SYNCHRONIZED: "synchronized" >
+| < THIS: "this" >
+| < THROW: "throw" >
+| < THROWS: "throws" >
+| < TRANSIENT: "transient" >
+| < TRUE: "true" >
+| < TRY: "try" >
+| < VOID: "void" >
+| < VOLATILE: "volatile" >
+| < WHILE: "while" >
+| < STRICTFP: "strictfp" >
+// added by Andrea Gini
+| < ASSERT: "assert" >
+}
+
+/* NSL RESERVED WORDS */
+
+TOKEN:
+{
+  < NSLIMPORT: "nslImport" >
+| < NSLCLASS: "nslClass" >
+| < NSLPORT: "nslPort" >
+| < NSLINPORT: "nslInPort" >
+| < NSLOUTPORT: "nslOutPort" >
+| < NSLCONSTANT: "nslConstant" >
+| < NSLMODEL: "nslModel" >
+| < NSLMODULE: "nslModule" >
+| < NSLINMODULE: "nslInModule" >
+| < NSLOUTMODULE: "nslOutModule" >
+| < CHARSTRING:   "charString" >
+| < #VERBATIMNSLJ: "verbatim_NSLJ"  (" "|"\t"|"\n"|"\r"|"\f")* ";" > 
+| < #VERBATIMNSLC: "verbatim_NSLC"  (" "|"\t"|"\n"|"\r"|"\f")* ";" > 
+| < #VERBATIMOFF: "verbatim_off"  (" "|"\t"|"\n"|"\r"|"\f")* ";" > 
+}
+
+/* verbatim */
+
+MORE :
+{  
+  < VERBATIMTEMPJ: <VERBATIMNSLJ> > { NslParser.vnslj=lengthOfMatch; } : IN_MULTI_LINE_VERBATIM
+}
+
+MORE :
+{
+  < VERBATIMTEMPC: <VERBATIMNSLC> > { NslParser.vnslj=lengthOfMatch; } : IN_MULTI_LINE_VERBATIM
+}
+
+<IN_MULTI_LINE_VERBATIM>
+SPECIAL_TOKEN :
+{
+  < MULTI_LINE_VERBATIM: <VERBATIMOFF> > { matchedToken.image = matchedToken.image.substring(NslParser.vnslj, matchedToken.image.length()-lengthOfMatch); } : DEFAULT
+}
+
+<IN_MULTI_LINE_VERBATIM>
+MORE :
+{
+  < ~[] >
+}
+
+/* LITERALS */
+
+TOKEN :
+{
+  < INTEGER_LITERAL:
+        <DECIMAL_LITERAL> (["l","L"])?
+      | <HEX_LITERAL> (["l","L"])?
+      | <OCTAL_LITERAL> (["l","L"])?
+  >
+|
+  < #DECIMAL_LITERAL: ["1"-"9"] (["0"-"9"])* >
+|
+  < #HEX_LITERAL: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+|
+  < #OCTAL_LITERAL: "0" (["0"-"7"])* >
+|
+  < FLOATING_POINT_LITERAL:
+        (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)? (["f","F","d","D"])?
+      | "." (["0"-"9"])+ (<EXPONENT>)? (["f","F","d","D"])?
+      | (["0"-"9"])+ <EXPONENT> (["f","F","d","D"])?
+      | (["0"-"9"])+ (<EXPONENT>)? ["f","F","d","D"]
+  >
+|
+  < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+|
+  < CHARACTER_LITERAL:
+      "'"
+      (   (~["'","\\","\n","\r"])
+        | ("\\"
+            ( ["n","t","b","r","f","\\","'","\""]
+            | ["0"-"7"] ( ["0"-"7"] )?
+            | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+            )
+          )
+      )
+      "'"
+  >
+|
+  < STRING_LITERAL:
+      "\""
+      (   (~["\"","\\","\n","\r"])
+        | ("\\"
+            ( ["n","t","b","r","f","\\","'","\""]
+            | ["0"-"7"] ( ["0"-"7"] )?
+            | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+            )
+          )
+      )*
+      "\""
+  >
+}
+
+/* IDENTIFIERS */
+
+TOKEN :
+{
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < #LETTER:
+      [
+       "\u0024",
+       "\u0041"-"\u005a",
+       "\u005f",
+       "\u0061"-"\u007a",
+       "\u00c0"-"\u00d6",
+       "\u00d8"-"\u00f6",
+       "\u00f8"-"\u00ff",
+       "\u0100"-"\u1fff",
+       "\u3040"-"\u318f",
+       "\u3300"-"\u337f",
+       "\u3400"-"\u3d2d",
+       "\u4e00"-"\u9fff",
+       "\uf900"-"\ufaff"
+      ]
+  >
+|
+  < #DIGIT:
+      [
+       "\u0030"-"\u0039",
+       "\u0660"-"\u0669",
+       "\u06f0"-"\u06f9",
+       "\u0966"-"\u096f",
+       "\u09e6"-"\u09ef",
+       "\u0a66"-"\u0a6f",
+       "\u0ae6"-"\u0aef",
+       "\u0b66"-"\u0b6f",
+       "\u0be7"-"\u0bef",
+       "\u0c66"-"\u0c6f",
+       "\u0ce6"-"\u0cef",
+       "\u0d66"-"\u0d6f",
+       "\u0e50"-"\u0e59",
+       "\u0ed0"-"\u0ed9",
+       "\u1040"-"\u1049"
+      ]
+  >
+}
+
+/* SEPARATORS */
+
+TOKEN :
+{
+  < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LBRACE: "{" >
+| < RBRACE: "}" >
+| < LBRACKET: "[" >
+| < RBRACKET: "]" >
+| < SEMICOLON: ";" >
+| < COMMA: "," >
+| < DOT: "." >
+}
+
+/* OPERATORS */
+
+TOKEN :
+{
+  < ASSIGN: "=" >
+| < GT: ">" >
+| < LT: "<" >
+| < BANG: "!" >
+| < TILDE: "~" >
+| < HOOK: "?" >
+| < COLON: ":" >
+| < EQ: "==" >
+| < LE: "<=" >
+| < GE: ">=" >
+| < NE: "!=" >
+| < SC_OR: "||" >
+| < SC_AND: "&&" >
+| < INCR: "++" >
+| < DECR: "--" >
+| < PLUS: "+" >
+| < MINUS: "-" >
+| < STAR: "*" >
+| < SLASH: "/" >
+| < BIT_AND: "&" >
+| < BIT_OR: "|" >
+| < XOR: "^" >
+| < REM: "%" >
+| < LSHIFT: "<<" >
+| < RSIGNEDSHIFT: ">>" >
+| < RUNSIGNEDSHIFT: ">>>" >
+| < PLUSASSIGN: "+=" >
+| < MINUSASSIGN: "-=" >
+| < STARASSIGN: "*=" >
+| < SLASHASSIGN: "/=" >
+| < ANDASSIGN: "&=" >
+| < ORASSIGN: "|=" >
+| < XORASSIGN: "^=" >
+| < REMASSIGN: "%=" >
+| < LSHIFTASSIGN: "<<=" >
+| < RSIGNEDSHIFTASSIGN: ">>=" >
+| < RUNSIGNEDSHIFTASSIGN: ">>>=" >
+}
+
+
+/****************************************
+ * THE NSL LANGUAGE GRAMMAR STARTS HERE *
+ ****************************************/
+
+/*
+ * Program structuring syntax follows.
+ */
+
+void NslImportDeclaration() :
+{}
+{
+  "nslImport" Name() [ "." "*" {jjtThis.setGlobing(true);} ] ";" 
+}
+
+void NslClassDeclaration() :
+{}
+{
+  ("nslModel"|"nslModule"|"nslOutModule"|"nslInModule"|"nslClass"|"nslInPort"|"nslOutPort" | "nslPort")
+  <IDENTIFIER> FormalParameters() [ "extends" Name() Arguments() { jjtThis.setExtends(true); }] 
+  ClassBody()
+}
+
+void NslNestedClassDeclaration() :
+{}
+{
+  ("nslClass"|"nslOutPort"|"nslInPort" | "nslPort")
+  <IDENTIFIER> FormalParameters() [ "extends" Name() Arguments() { jjtThis.setExtends(true); }] 
+  ClassBody()
+}
+
+
+void NslFieldDeclaration() :
+{
+  Token t;
+}
+{
+  LOOKAHEAD(2)
+  (( "public"    { jjtThis.setPublic(true); } 
+  | "protected" { jjtThis.setProtected(true); } 
+  | "private"   { jjtThis.setPrivate(true); } | "static" | "final" | "transient" | "volatile" | t="nslConstant" { t.image=" static final ";} )*
+  Name() NslVariableDeclarator()  ( "," NslVariableDeclarator() )*  ";")
+|
+  LOOKAHEAD(2)
+  (( "public"    { jjtThis.setPublic(true); } 
+  | "protected" { jjtThis.setProtected(true); } 
+  | "private"   { jjtThis.setPrivate(true); } | "static" | "final" | "transient" | "volatile" | t="nslConstant" { t.image=" static final ";} )*
+  PrimitiveType() NslArrayDeclarator()  ( "," NslArrayDeclarator() )*  ";")
+}
+
+
+void NslLocalVariableDeclaration() :
+{}
+{
+  LOOKAHEAD(2)
+  ([ "final" ] Name() NslVariableDeclarator()  ( "," NslVariableDeclarator() )* )
+|
+  LOOKAHEAD([ "final" ] PrimitiveType() NslArrayDeclarator())
+  ([ "final" ] PrimitiveType() NslArrayDeclarator()  ( "," NslArrayDeclarator() )* )
+}
+
+
+void NslVariableDeclarator() :
+{}
+{
+  <IDENTIFIER>  Arguments() [ "=" VariableInitializer() ]
+}
+
+void NslArrayDeclarator() :
+{}
+{
+  <IDENTIFIER>  ("[" Expression() "]")+
+}
+
+/*****************************************
+ * THE JAVA LANGUAGE GRAMMAR STARTS HERE *
+ *****************************************/
+
+
+ASTCompilationUnit CompilationUnit() :
+{}
+{
+  try {
+    [ PackageDeclaration() ]
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+
+(
+  try {
+     ImportDeclaration() | NslImportDeclaration() 
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+)*
+
+(
+  try {
+ TypeDeclaration() | NslClassDeclaration() 
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+)+
+
+  try {
+    <EOF>
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", "Unexpected end of file was reached", p.getLineNumber(), p.getColumnNumber());
+  }
+
+  { return jjtThis; }
+}
+
+void PackageDeclaration() :
+{}
+{
+  "package" Name() ";"
+}
+
+void ImportDeclaration() :
+{}
+{
+  "import" Name() [ "." "*"  {jjtThis.setGlobing(true);} ] ";"
+}
+
+void TypeDeclaration() :
+{}
+{
+  LOOKAHEAD( ( "abstract" | "final" | "public" | "strictfp" )* "class" )
+  ClassDeclaration()
+|
+  InterfaceDeclaration()
+|
+  ";"
+}
+
+
+/*
+ * Declaration syntax follows.
+ */
+
+void ClassDeclaration() :
+{}
+{
+  ( "abstract" | "final" | "public" | "strictfp")*
+  UnmodifiedClassDeclaration()
+}
+
+void UnmodifiedClassDeclaration() :
+{}
+{
+  "class" <IDENTIFIER> [ "extends" Name() {jjtThis.setExtends(true);} ] [ "implements" NameList() ]
+  ClassBody()
+}
+
+void ClassBody() :
+{}
+{
+  "{" ( ClassBodyDeclaration() )* "}"
+}
+
+void NestedClassDeclaration() :
+{}
+{
+  ( "static" | "abstract" | "final" | "public" | "protected" | "private" | "strictfp")*
+  UnmodifiedClassDeclaration()
+}
+
+/* Modified by Andrea Gini 2 
+ * According rules ClassBody and ClassBodyDeclaration
+ * in the Java Language Specification,
+ * semi-colons can be duplicated.
+ * Source : http://java.sun.com/docs/books/jls/second_edition/html/syntax.doc.html
+ */ 
+
+void ClassBodyDeclaration() :
+{}
+{
+  LOOKAHEAD(2)
+  try {
+    Initializer()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  LOOKAHEAD( ( "nslOutPort" | "nslInPort" | "nslPort" | "nslClass" ) )
+  try {
+    NslNestedClassDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  LOOKAHEAD( ( "static" | "abstract" | "final" | "public" | "protected" | "private" | "strictfp")* "class" )
+  try {
+    NestedClassDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  LOOKAHEAD( ( "static" | "abstract" | "final" | "public" | "protected" | "private" | "strictfp")* "interface" )
+  try {
+    NestedInterfaceDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  LOOKAHEAD( [ "public" | "protected" | "private" ] Name() "(" )
+  try {
+    ConstructorDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  LOOKAHEAD(NslFieldDeclaration())
+  try {
+    NslFieldDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  LOOKAHEAD( MethodDeclarationLookahead() )
+  try {
+    MethodDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  try {
+    FieldDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|             // added by Andrea Gini2
+  ";"         // added by Andrea Gini2
+}
+
+// This production is to determine lookahead only.
+void MethodDeclarationLookahead() :
+{}
+{
+  ( "public" | "protected" | "private" | "static" | "abstract" | "final" | "native" | "synchronized" | "strictfp")*
+  ResultType() <IDENTIFIER> "(" 
+}
+
+void InterfaceDeclaration() :
+{}
+{
+  ( "abstract" | "public" | "strictfp")*
+  UnmodifiedInterfaceDeclaration()
+}
+
+void NestedInterfaceDeclaration() :
+{}
+{
+  ( "static" | "abstract" | "final" | "public" | "protected" | "private" | "strictfp")*
+  UnmodifiedInterfaceDeclaration()
+}
+
+void UnmodifiedInterfaceDeclaration() :
+{}
+{
+  "interface" <IDENTIFIER> [ "extends" NameList() ]
+  "{" ( InterfaceMemberDeclaration() )* "}"
+}
+/* Modified by Andrea Gini 2 
+ * According to rules InterfaceBody and InterfaceBodyDeclaration
+ * in the Java Language Specification,
+ * semi-colons can be duplicated.
+ * Source : http://java.sun.com/docs/books/jls/second_edition/html/syntax.doc.html
+ */ 
+void InterfaceMemberDeclaration() :
+{}
+{
+  LOOKAHEAD( ( "static" | "abstract" | "final" | "public" | "protected" | "private" | "strictfp")* "class" )
+  NestedClassDeclaration()
+|
+  LOOKAHEAD( ( "static" | "abstract" | "final" | "public" | "protected" | "private" | "strictfp")* "interface" )
+  NestedInterfaceDeclaration()
+|
+  LOOKAHEAD( MethodDeclarationLookahead() )
+  MethodDeclaration()
+|
+  FieldDeclaration()
+|             // added by Andrea Gini2
+  ";"         // added by Andrea Gini2
+}
+
+// Modified to accept nslConstant
+
+void FieldDeclaration() :
+{
+  Token t;
+}
+{
+  ( "public" | "protected" | "private" | "static" | "final" | "transient" | "volatile" | t="nslConstant" { t.image="static final";} )*
+  Type() VariableDeclarator() ( "," VariableDeclarator() )* ";"
+}
+
+void VariableDeclarator() :
+{}
+{
+  VariableDeclaratorId() [ "=" VariableInitializer() ]
+}
+
+void VariableDeclaratorId() :
+{}
+{
+  <IDENTIFIER> ( "[" "]" )*
+}
+
+void VariableInitializer() :
+{}
+{
+  ArrayInitializer()
+|
+  Expression()
+}
+
+void ArrayInitializer() :
+{}
+{
+  "{" [ VariableInitializer() ( LOOKAHEAD(2) "," VariableInitializer() )* ] [ "," ] "}"
+}
+
+// Salvador: If we allow the semicolon, then there is no way to solve the ambiguity,
+//           Therefore, I'm taking it out.
+
+void MethodDeclaration() :
+{}
+{
+  ( "public" | "protected" | "private" | "static" | "abstract" | "final" | "native" | "synchronized" | "strictfp")*
+  ResultType() MethodDeclarator() [ "throws" NameList() ]
+  ( Block() /* | ";" */ )
+}
+
+void MethodDeclarator() :
+{}
+{
+  <IDENTIFIER> FormalParameters() ( "[" "]" )*
+}
+
+void FormalParameters() :
+{}
+{
+  "(" [ FormalParameter() ( "," FormalParameter() )* ] ")"
+}
+
+void FormalParameter() :
+{}
+{
+  [ "final" {jjtThis.setFinal(true);}] Type() VariableDeclaratorId()
+}
+
+void ConstructorDeclaration() :
+{}
+{
+  [ "public" | "protected" | "private" ]
+  <IDENTIFIER> FormalParameters() [ "throws" NameList() ]
+  "{"
+    [ LOOKAHEAD(ExplicitConstructorInvocation()) ExplicitConstructorInvocation() ]
+    ( BlockStatement() )*
+  "}"
+}
+
+void ExplicitConstructorInvocation() :
+{}
+{
+  LOOKAHEAD("this" Arguments() ";")
+  "this" Arguments() ";"
+|
+  [ LOOKAHEAD(2) PrimaryExpression() "." ] "super" Arguments() ";"
+}
+
+void Initializer() :
+{}
+{
+  [ "static" ] Block()
+}
+
+
+/*
+ * Type, name and expression syntax follows.
+ */
+
+void Type() :
+{}
+{
+  ( PrimitiveType() | Name() ) ( "[" "]" )*
+}
+
+// Modified to accept charString
+
+void PrimitiveType() :
+{
+  Token t;
+}
+{
+  "boolean"
+|
+  "char"
+|
+  "byte"
+|
+  "short"
+|
+  "int"
+|
+  "long"
+|
+  "float"
+|
+  "double"
+|
+  t="charString" { t.image="String";}
+}
+
+void ResultType() :
+{}
+{
+  "void"
+|
+  Type()
+}
+
+void Name() :
+/*
+ * A lookahead of 2 is required below since "Name" can be followed
+ * by a ".*" when used in the context of an "ImportDeclaration".
+ */
+{}
+{
+  <IDENTIFIER>
+  ( LOOKAHEAD(2) "." <IDENTIFIER>
+  )*
+}
+
+void NameList() :
+{}
+{
+  Name()
+  ( "," Name()
+  )*
+}
+
+
+/*
+ * Expression syntax follows.
+ */
+
+void Expression() :
+/*
+ * This expansion has been written this way instead of:
+ *   Assignment() | ConditionalExpression()
+ * for performance reasons.
+ * However, it is a weakening of the grammar for it allows the LHS of
+ * assignments to be any conditional expression whereas it can only be
+ * a primary expression.  Consider adding a semantic predicate to work
+ * around this.
+ */
+{}
+{
+  ConditionalExpression() { jjtThis.setNodeType("conditional"); }
+  [
+    AssignmentOperator() Expression() { jjtThis.setNodeType("assignment"); }
+  ]
+}
+
+void AssignmentOperator() :
+{}
+{
+  "=" | "*=" | "/=" | "%=" | "+=" | "-=" | "<<=" | ">>=" | ">>>=" | "&=" | "^=" | "|="
+}
+
+void ConditionalExpression() :
+{}
+{
+  ConditionalOrExpression() [ "?" Expression() ":" ConditionalExpression() ]
+}
+
+void ConditionalOrExpression() :
+{}
+{
+  ConditionalAndExpression() ( "||" ConditionalAndExpression() )*
+}
+
+void ConditionalAndExpression() :
+{}
+{
+  InclusiveOrExpression() ( "&&" InclusiveOrExpression() )*
+}
+
+void InclusiveOrExpression() :
+{}
+{
+  ExclusiveOrExpression() ( "|" ExclusiveOrExpression() )*
+}
+
+void ExclusiveOrExpression() :
+{}
+{
+  AndExpression() ( "^" AndExpression() )*
+}
+
+void AndExpression() :
+{}
+{
+  EqualityExpression() ( "&" EqualityExpression() )*
+}
+
+void EqualityExpression() :
+{}
+{
+  InstanceOfExpression() ( ( "==" | "!=" ) InstanceOfExpression() )*
+}
+
+void InstanceOfExpression() :
+{}
+{
+  RelationalExpression() [ "instanceof" Type() ]
+}
+
+void RelationalExpression() :
+{}
+{
+  ShiftExpression() ( ( "<" | ">" | "<=" | ">=" ) ShiftExpression() )*
+}
+
+void ShiftExpression() :
+{}
+{
+  AdditiveExpression() ( ( "<<" | ">>" | ">>>" ) AdditiveExpression() )*
+}
+
+void AdditiveExpression() :
+{}
+{
+  MultiplicativeExpression() ( ( "+" | "-" ) MultiplicativeExpression() )*
+}
+
+void MultiplicativeExpression() :
+{}
+{
+  UnaryExpression() ( ( "@" | "*" | "/" | "%" ) UnaryExpression() )*
+}
+
+void UnaryExpression() :
+{}
+{
+  ( "+" | "-" ) UnaryExpression() 
+|
+  PreIncrementExpression()
+|
+  PreDecrementExpression()
+|
+  UnaryExpressionNotPlusMinus()
+}
+
+void PreIncrementExpression() :
+{}
+{
+  "++" PrimaryExpression()
+}
+
+void PreDecrementExpression() :
+{}
+{
+  "--" PrimaryExpression()
+}
+
+void UnaryExpressionNotPlusMinus() :
+{}
+{
+  ( "~" | "!" ) UnaryExpression()
+|
+  LOOKAHEAD( CastLookahead() )
+  CastExpression()
+|
+  PostfixExpression()
+}
+
+// This production is to determine lookahead only.  The LOOKAHEAD specifications
+// below are not used, but they are there just to indicate that we know about
+// this.
+void CastLookahead() :
+{}
+{
+  LOOKAHEAD(2)
+  "(" PrimitiveType()
+|
+  LOOKAHEAD("(" Name() "[")
+  "(" Name() "[" "]"
+|
+  "(" Name() ")" ( "~" | "!" | "(" | <IDENTIFIER> | "this" | "super" | "new" | Literal() )
+}
+
+void PostfixExpression() :
+{}
+{
+  PrimaryExpression() [ "++" { jjtThis.setOperator("++"); } | "--" { jjtThis.setOperator("--"); }]
+}
+
+void CastExpression() :
+{}
+{
+  LOOKAHEAD("(" PrimitiveType())
+  "(" Type() ")" UnaryExpression()
+|
+  "(" Type() ")" UnaryExpressionNotPlusMinus()
+}
+
+void PrimaryExpression() :
+{}
+{
+  PrimaryPrefix() ( LOOKAHEAD(2) PrimarySuffix() )*
+}
+
+void PrimaryPrefix() :
+{}
+{
+  Literal()                  { jjtThis.setNodeType("literal"); }
+|
+  "this"                     { jjtThis.setNodeType("this"); }
+|
+  "super" "." <IDENTIFIER>   { jjtThis.setNodeType("super."); }
+|
+  "(" Expression() ")"       { jjtThis.setNodeType("expression"); }
+|
+  AllocationExpression()     { jjtThis.setNodeType("allocation"); }
+|
+  LOOKAHEAD( ResultType() "." "class" )
+  ResultType() "." "class"   { jjtThis.setNodeType(".class"); }
+|
+  Name()		     {  
+				jjtThis.setNodeType("name"); 
+				jjtThis.translateNslName();
+			     }
+}
+
+/* Add "." "super" to be compatible with Java 1.2, 
+ * Modified by Marco Savard
+ */ 
+void PrimarySuffix() :
+{}
+{
+  LOOKAHEAD(2)
+  "." "this"		     { jjtThis.setNodeType(".this"); }
+|
+  LOOKAHEAD(2)
+  "." "super"                { jjtThis.setNodeType(".super"); }
+|
+  LOOKAHEAD(2)
+  "." AllocationExpression() { jjtThis.setNodeType(".allocation"); }
+|
+  "[" Expression() "]"       { jjtThis.setNodeType("index"); }
+|
+  "." <IDENTIFIER>	     { jjtThis.setNodeType("access"); }
+|
+  Arguments()		     { jjtThis.setNodeType("method"); }
+}
+
+void Literal() :
+{}
+{
+  <INTEGER_LITERAL>        { jjtThis.setNodeType("int"); }
+|
+  <FLOATING_POINT_LITERAL> { jjtThis.setNodeType("double"); }
+|
+  <CHARACTER_LITERAL>      { jjtThis.setNodeType("char"); }
+|
+  <STRING_LITERAL>         { jjtThis.setNodeType("String"); }
+|
+  BooleanLiteral()         { jjtThis.setNodeType("boolean"); }
+|
+  NullLiteral()            { jjtThis.setNodeType("null"); }
+}
+
+void BooleanLiteral() :
+{}
+{
+  "true"
+|
+  "false" 
+}
+
+void NullLiteral() :
+{}
+{
+  "null" 
+}
+
+void Arguments() :
+{}
+{
+  "(" [ ArgumentList() ] ")"
+}
+
+void ArgumentList() :
+{}
+{
+  Expression() ( "," Expression() )*
+}
+
+void AllocationExpression() :
+{}
+{
+  LOOKAHEAD(2)
+  "new" PrimitiveType() ArrayDimsAndInits()
+|
+  "new" Name()
+    (
+      ArrayDimsAndInits()
+    |
+      Arguments() [ ClassBody() ]
+    )
+}
+
+/*
+ * The second LOOKAHEAD specification below is to parse to PrimarySuffix
+ * if there is an expression between the "[...]".
+ */
+void ArrayDimsAndInits() :
+{}
+{
+  LOOKAHEAD(2)
+  ( LOOKAHEAD(2) "[" Expression() "]" )+ ( LOOKAHEAD(2) "[" "]" )*
+|
+  ( "[" "]" )+ ArrayInitializer()
+}
+
+
+/*
+ * Statement syntax follows.
+ */
+
+void Statement() :
+{}
+{
+  LOOKAHEAD(2)
+  LabeledStatement()
+|
+  Block()
+|
+  EmptyStatement()
+|
+  StatementExpression() ";"
+|
+  SwitchStatement()
+|
+  IfStatement()
+|
+  WhileStatement()
+|
+  DoStatement()
+|
+  ForStatement()
+|
+  BreakStatement()
+|
+  ContinueStatement()
+|
+  ReturnStatement()
+|
+  ThrowStatement()
+|
+  SynchronizedStatement()
+|
+  TryStatement()
+// added by Andrea Gini
+|
+  AssertStatement()
+}
+
+void LabeledStatement() :
+{}
+{
+  <IDENTIFIER> ":" Statement()
+}
+
+void Block() :
+{}
+{
+  "{" ( BlockStatement() )* "}"
+}
+
+// Salvador: Modified to accept local nsl variables.
+
+void BlockStatement() :
+{}
+{
+  LOOKAHEAD([ "final" ] (PrimitiveType() NslArrayDeclarator()) | (Name() <IDENTIFIER>  Arguments()))
+  try {
+    NslLocalVariableDeclaration() 
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+    error_skipto(SEMICOLON);
+  }
+  ";"
+|
+  LOOKAHEAD([ "final" ] Type() <IDENTIFIER>)
+  try {
+    LocalVariableDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+    error_skipto(SEMICOLON);
+  }
+ ";"
+|
+  try {
+    Statement()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+    error_skipto(SEMICOLON);
+  }
+|
+  try {
+    UnmodifiedClassDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+|
+  try {
+    UnmodifiedInterfaceDeclaration()
+  } catch (ParseException p) {
+    NslCompiler.printError("NslParser", p.getDescription(), p.getLineNumber(), p.getColumnNumber());
+  }
+}
+
+void LocalVariableDeclaration() :
+{}
+{
+  [ "final" ] Type() VariableDeclarator() ( "," VariableDeclarator() )*
+}
+
+void EmptyStatement() :
+{}
+{
+  ";"
+}
+
+void StatementExpression() :
+/*
+ * The last expansion of this production accepts more than the legal
+ * Java expansions for StatementExpression.  This expansion does not
+ * use PostfixExpression for performance reasons.
+ */
+{}
+{
+  PreIncrementExpression()
+|
+  PreDecrementExpression()
+|
+  PrimaryExpression() { jjtThis.setNodeType("statementExpression"); }
+  [
+    "++" { jjtThis.setOperator("++"); }
+  |
+    "--" { jjtThis.setOperator("--"); }
+  |
+    AssignmentOperator() Expression() { jjtThis.setNodeType("assignment"); }
+  ]
+}
+
+void SwitchStatement() :
+{}
+{
+  "switch" "(" Expression() ")" "{"
+    ( SwitchLabel() ( BlockStatement() )* )*
+  "}"
+}
+
+void SwitchLabel() :
+{}
+{
+  "case" Expression() ":"
+|
+  "default" ":"
+}
+
+void IfStatement() :
+/*
+ * The disambiguating algorithm of JavaCC automatically binds dangling
+ * else's to the innermost if statement.  The LOOKAHEAD specification
+ * is to tell JavaCC that we know what we are doing.
+ */
+{}
+{
+  "if" "(" Expression() ")" Statement() [ LOOKAHEAD(1) "else" Statement() ]
+}
+
+void WhileStatement() :
+{}
+{
+  "while" "(" Expression() ")" Statement()
+}
+
+void DoStatement() :
+{}
+{
+  "do" Statement() "while" "(" Expression() ")" ";"
+}
+
+void ForStatement() :
+{}
+{
+  "for" "(" [ ForInit() ] ";" [ Expression() ] ";" [ ForUpdate() ] ")" Statement()
+}
+
+void ForInit() :
+{}
+{
+  LOOKAHEAD( [ "final" ] Type() <IDENTIFIER> )
+  LocalVariableDeclaration()
+|
+  StatementExpressionList()
+}
+
+void StatementExpressionList() :
+{}
+{
+  StatementExpression() ( "," StatementExpression() )*
+}
+
+void ForUpdate() :
+{}
+{
+  StatementExpressionList()
+}
+
+void BreakStatement() :
+{}
+{
+  "break" [ <IDENTIFIER> ] ";"
+}
+
+void ContinueStatement() :
+{}
+{
+  "continue" [ <IDENTIFIER> ] ";"
+}
+
+void ReturnStatement() :
+{}
+{
+  "return" [ Expression() ] ";"
+}
+
+void ThrowStatement() :
+{}
+{
+  "throw" Expression() ";"
+}
+
+void SynchronizedStatement() :
+{}
+{
+  "synchronized" "(" Expression() ")" Block()
+}
+
+void TryStatement() :
+/*
+ * Semantic check required here to make sure that at least one
+ * finally/catch is present.
+ */
+{}
+{
+  "try" Block()
+  ( "catch" "(" FormalParameter() ")" Block() )*
+  [ "finally" { jjtThis.setFinally(true); } Block() ]
+}
+
+// added by Andrea Gini
+void AssertStatement() :
+{}
+{
+   "assert" Expression() [ ":" Expression() ] ";"
+}
+
+JAVACODE
+
+void error_skipto(int kind) {
+  Token t;
+  NslParser.error=true;
+  do {
+    t = getNextToken();
+  } while (t.kind != kind);
+  // The above loop consumes tokens all the way upto a token of
+  // "kind". We use a do-while loop rather than a while because the
+  // current token is the one immediately before the erroneous token
+}
+

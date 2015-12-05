@@ -1,0 +1,59 @@
+98/9/18-aa: files changed
+	nslj/src/math/NslDiff.java  -- added new prototype
+	nslj/src/math/NslDiffEuler.java
+98/9/22-aa: files changed
+	resume - created new dir "nslj/src/main" and put it in CLASSPATH
+		also took out path to nsj/src/system
+		also removed files from PATH and LD_LIBRARY_PATH
+	copyme/NslApplet.html and copyme/NslAppletInfo.html -- 
+		updated documentation to reflect Didday Model
+	nslj/src/system/NslMain.java -- had to move to directory "main"
+	nslj/src/system/NslMain.java -- added smallScreen arg flag
+	nslj/src/system/NslSystem.java -- added smallScreen arg flag default = false
+	nslj/src/math/NslDiff.java -- added prototype so input could be of
+					NslType
+	nslj/src/math/NslDiffEuler.java -- added prototype so input could be of
+					NslType
+	nslj/src/display/NslDisplayVariableInput.java -- added instruction lables
+	cosmetic: change Canceal to Cancel in the following files
+	nslj/src/display/:
+	NslDisplayAreaCanvasProperty.java:        p4.add(b = new Button("Canceal"));
+	NslDisplayBarCanvasProperty.java:        p4.add(b = new Button("Canceal"));
+	NslDisplayFrameProperty.java:        p4.add(new Button("Canceal"));
+	NslDisplayImageCanvasProperty.java:        p4.add(b = new Button("Canceal"));
+	NslDisplayOutFileProperty.java:        p4.add(b = new Button("Canceal"));
+	NslDisplaySpatialCanvasProperty.java:        p4.add(b = new Button("Canceal"));
+	NslDisplayTemporalCanvasProperty.java:        p4.add(b = new Button("Canceal"));
+
+98/9/26 aa: added the Matlab files to the nslj/copyme directory.
+	These need work: main.m and plot2d.m
+
+98/9/28 aa & nm: added \r to the whitespace set for both lx and npp
+	so that they would work with files generated on the pc.
+
+98/10/1 aa & nm: added dos and unix directories with copyme files
+	and bin files within.
+
+98/10/1 aa: added default to "save" command to save as "Matlab".
+	Changed files: 
+	NslDisplayOutFileProperty.java
+	NslDisplayOutFile.java
+
+98/10/1 aa: added test files to copyme_all directory for Matlab
+	copyme_all/main.m
+	copyme_all/test3.m
+	copyme_all/0d.m
+	copyme_all/1d.m
+	copyme_all/3d.m
+98/10/1 aa: added var_sel_full_name to error message in:
+	nslj/src/NslDisplayFrame.java
+98/10/2 aa: added two "else" rules to lx/src/alpha.lex so
+	that it would not put the word SPECIAL in front
+	of the else and so that it would not put the
+	word NSLJ in front of the else.
+	aa: added one "new" rule so that lx did not put
+	the word "ARRAY" in front of new statements.
+98/10/3 aa: edited npp/src/jbf/BinaryExprNode.java so
+	that it caught "native=func()" and "nslNumeric=func();"
+	and "nslNumeric=(cast)func()".
+

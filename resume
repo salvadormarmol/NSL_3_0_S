@@ -1,0 +1,28 @@
+#!/bin/csh
+# SCCS @(#)resume	1.2 ---01/14/99 --17:31:10
+# Sun Workstations resume script
+# 98/9/23
+
+setenv NSLJ_ROOT /Users/Elly1/Documents/NSL3_0_s 
+setenv JAVA_HOME /usr
+setenv NSL_OS unix
+
+alias nsl java NslMain
+alias nslc java NslCompiler  
+alias nslclean java NslCompiler -clean
+
+if (! $?PATH) then
+    setenv PATH
+endif
+# setenv PATH ${JAVA_HOME}/bin:${PATH}
+
+if (! $?LD_LIBRARY_PATH) then
+        setenv LD_LIBRARY_PATH
+endif
+setenv LD_LIBRARY_PATH ${JAVA_HOME}/lib:${LD_LIBRARY_PATH}
+
+# 98/9/22 aa: new - moved NslMain to its own directory 
+# the last two paths are for finding software NPP and NslMain
+setenv NSL_SIM ${NSLJ_ROOT}/nslj/src
+setenv CLASSPATH .:${JAVA_HOME}/lib/classes.zip:${NSLJ_ROOT}/nslc/src:${NSLJ_ROOT}:${NSL_SIM}/main:${NSL_SIM}/nsls/jacl:${NSL_SIM}/nsls/tcljava
+
